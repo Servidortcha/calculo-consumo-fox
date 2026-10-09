@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consumo VW Fox 1.6 2014 — Calculadora</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{
+    --bg:#0e1116; --card:#161b22; --card2:#1c2230; --line:#2a3140;
+    --txt:#e6edf3; --mut:#8b949e; --acc:#3b9eff; --acc2:#005bab;
+    --ok:#2ea043; --warn:#d29922; --bad:#f85149;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:24px 18px 60px}
+  header.top{
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:20px 22px; border:1px solid var(--line); border-radius:16px;
+    background:linear-gradient(135deg,#111726 0%,#0f1520 60%,#101825 100%);
+    margin-bottom:22px;
+  }
+  .logo{
+    width:52px; height:52px; border-radius:50%; flex:none;
+    background:radial-gradient(circle at 30% 25%, #2f7fd6, #0a4a8f 60%, #06305f);
+    display:grid; place-items:center; font-weight:800; font-size:15px;
+    letter-spacing:.5px; color:#fff; box-shadow:0 4px 18px rgba(0,90,180,.35);
+  }
+  header.top h1{margin:0; font-size:20px; letter-spacing:-.3px}
+  header.top p{margin:2px 0 0; color:var(--mut); font-size:13.5px}
+  .badge{
+    margin-left:auto; background:#0b2545; border:1px solid #1c4b85; color:#9ecbff;
+    padding:6px 12px; border-radius:999px; font-size:12.5px; font-weight:600; white-space:nowrap;
+  }
+  section.card{
+    background:var(--card); border:1px solid var(--line);
+    border-radius:16px; padding:20px 22px; margin-bottom:20px;
+  }
+  h2{margin:0 0 4px; font-size:15.5px; letter-spacing:-.2px}
+  .sub{margin:0 0 16px; color:var(--mut); font-size:13px}
+  .grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:14px}
+  label{display:block; font-size:12.5px; color:var(--mut); margin-bottom:6px; font-weight:600}
+  label span{font-weight:400; opacity:.75}
+  input,button,select{
+    font:inherit; color:var(--txt); border-radius:10px;
+    border:1px solid var(--line); background:#0d1117; width:100%;
+    padding:11px 12px; outline:none; transition:.15s;
+  }
+  input:focus{border-color:var(--acc); box-shadow:0 0 0 3px rgba(59,158,255,.15)}
+  .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px}
+  button{
+    cursor:pointer; font-weight:600; background:var(--acc); border-color:transparent; color:#00121f;
+    width:auto; padding:11px 20px;
+  }
+  button:hover{filter:brightness(1.08)}
+  button.ghost{background:transparent; border-color:var(--line); color:var(--mut)}
+  button.ghost:hover{color:var(--txt); border-color:var(--mut); filter:none}
+  button.danger{background:transparent; border-color:#5d2226; color:var(--bad)}
+  button.active{background:rgba(59,158,255,.15); border-color:var(--acc); color:var(--acc)}
+  .btn-sm{padding:6px 10px; font-size:12.5px; width:auto}
+  .metrics{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px}
+  .metric{
+    background:var(--card2); border:1px solid var(--line);
+    border-radius:14px; padding:15px 16px; position:relative; overflow:hidden;
+  }
+  .metric::after{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--acc)}
+  .metric .k{font-size:12px; color:var(--mut); font-weight:600; text-transform:uppercase; letter-spacing:.6px}
+  .metric .v{font-size:27px; font-weight:750; letter-spacing:-1px; margin-top:5px; line-height:1.15}
+  .metric .v small{font-size:14px; font-weight:600; color:var(--mut); letter-spacing:0}
+  .verdict{
+    margin-top:16px; padding:13px 16px; border-radius:12px; font-size:14px;
+    border:1px solid var(--line); background:#0d1117; display:none;
+  }
+  .verdict.show{display:block}
+  .split{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px}
+  .cmp{margin-top:6px}
+  .cmp .line{margin-bottom:14px}
+  .cmp .lbl{display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px}
+  .cmp .lbl b{font-weight:700}
+  .track{height:14px; background:#0d1117; border:1px solid var(--line); border-radius:999px; overflow:hidden}
+  .fill{height:100%; border-radius:999px; transition:width .5s ease; min-width:2px}
+  .fill.you{background:linear-gradient(90deg,#2ea043,#4ade80)}
+  .fill.you.worse{background:linear-gradient(90deg,#d29922,#f85149)}
+  .fill.ref{background:linear-gradient(90deg,#0a4a8f,#3b9eff)}
+  .note{font-size:12px; color:var(--mut); margin-top:10px; line-height:1.6}
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:16px}
+  .stat{background:#0d1117; border:1px solid var(--line); border-radius:12px; padding:11px 13px}
+  .stat .k{font-size:11.5px; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; font-weight:600}
+  .stat .v{font-size:19px; font-weight:700; margin-top:3px; letter-spacing:-.4px}
+  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:12px}
+  table{width:100%; border-collapse:collapse; font-size:13.5px; min-width:560px}
+  th,td{padding:10px 13px; text-align:right; border-bottom:1px solid var(--line); white-space:nowrap}
+  th{background:#11161f; color:var(--mut); font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; position:sticky; top:0}
+  th:first-child,td:first-child{text-align:left}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#1a2130}
+  td .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:700}
+  .pill.good{background:rgba(46,160,67,.15); color:#4ade80}
+  .pill.mid{background:rgba(210,153,34,.15); color:#f0c14b}
+  .pill.high{background:rgba(248,81,73,.15); color:#ff8080}
+  .empty{padding:26px; text-align:center; color:var(--mut); font-size:13.5px}
+  #chartBox{margin-top:18px; background:#0d1117; border:1px solid var(--line); border-radius:12px; padding:14px 12px 8px}
+  #chartBox h3{margin:0 0 4px; font-size:13px; color:var(--mut); font-weight:600; padding-left:4px}
+  svg{width:100%; height:auto; display:block}
+  .mapbar{display:flex; gap:10px}
+  .mapbar input{flex:1}
+  .chips{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px}
+  .chiptitle{font-size:12.5px; color:var(--mut); font-weight:600}
+  .chip{
+    width:auto; padding:7px 15px; font-size:13px; background:#0d1117;
+    border:1px solid var(--line); color:var(--mut); border-radius:999px; font-weight:600;
+  }
+  .chip.active{background:rgba(59,158,255,.15); border-color:var(--acc); color:var(--acc)}
+  #map{
+    height:340px; margin-top:14px; border-radius:12px;
+    border:1px solid var(--line); background:#11161f; z-index:0;
+  }
+  .mapfail{display:grid; place-items:center; height:100%; color:var(--mut); font-size:13.5px; text-align:center; padding:20px}
+  .sug{display:none; margin-top:10px; border:1px solid var(--line); border-radius:12px; overflow:hidden}
+  .sug.on{display:block}
+  .sug .head{padding:8px 14px; font-size:11.5px; color:var(--mut); background:#11161f; text-transform:uppercase; letter-spacing:.5px; font-weight:600}
+  .sug button{
+    display:block; width:100%; text-align:left; background:#0d1117; border:0;
+    border-top:1px solid var(--line); border-radius:0; padding:11px 14px;
+    font-weight:400; font-size:13.5px; color:var(--txt); line-height:1.4;
+  }
+  .sug button:hover{background:#1a2130}
+  .puntos{font-size:13px; margin-top:12px; color:var(--mut); display:none; line-height:1.7}
+  .puntos.show{display:block}
+  .puntos b{color:var(--txt); font-weight:600}
+  .puntos .o{color:#4ade80} .puntos .d{color:#ff8080}
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translate(-50%,20px);
+    background:#1c2230; border:1px solid var(--line); color:var(--txt);
+    padding:11px 20px; border-radius:10px; font-size:13.5px; opacity:0;
+    pointer-events:none; transition:.25s; z-index:1000; box-shadow:0 8px 30px rgba(0,0,0,.5);
+    max-width:90vw; text-align:center;
+  }
+  .toast.on{opacity:1; transform:translate(-50%,0)}
+  footer{color:var(--mut); font-size:12px; text-align:center; margin-top:8px; line-height:1.7}
+  @media (max-width:560px){
+    .wrap{padding:16px 12px 46px}
+    .metric .v{font-size:23px}
+    header.top{padding:16px}
+    .badge{margin-left:0}
+    #map{height:300px}
+    section.card{padding:16px 15px}
+    .row button{flex:1 1 auto}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="logo">VW</div>
+    <div>
+      <h1>Calculadora de consumo</h1>
+      <p>Planea tu ruta, registra tus cargas y mide el rendimiento real</p>
+    </div>
+    <div class="badge">Fox · 2014 · 1.6</div>
+  </header>
+
+  <section class="card">
+    <h2>1 · Ruta en el mapa</h2>
+    <p class="sub">Marca el origen y el destino para estimar los litros y el costo del viaje.</p>
+
+    <div class="mapbar">
+      <input id="buscar" type="text" placeholder="Buscar lugar o dirección (ej. Walmart Saltillo)" autocomplete="off">
+      <button id="btnBuscar">Buscar</button>
+    </div>
+    <div class="chips">
+      <span class="chiptitle">Fijar resultado como:</span>
+      <button class="chip active" id="chipO" data-pin="origen">Origen</button>
+      <button class="chip" id="chipD" data-pin="destino">Destino</button>
+    </div>
+    <div class="sug" id="sugerencias"></div>
+
+    <div class="row">
+      <button class="ghost" id="btnGeo">Mi ubicación (GPS)</button>
+      <button class="active" id="btnTap">Tocar el mapa: activado</button>
+      <button class="ghost" id="btnInv">Invertir origen/destino</button>
+      <button class="ghost" id="btnQuitar">Limpiar mapa</button>
+    </div>
+
+    <div id="map"><div class="mapfail">No se pudo cargar el mapa.<br>Revisa tu conexión a internet.</div></div>
+
+    <div class="puntos" id="puntosTxt"></div>
+
+    <div class="stats" id="rutaStats" style="display:none; margin-top:16px">
+      <div class="stat"><div class="k">Distancia</div><div class="v" id="rDist">—</div></div>
+      <div class="stat"><div class="k">Tiempo</div><div class="v" id="rTiempo">—</div></div>
+      <div class="stat"><div class="k">Litros estimados</div><div class="v" id="rLitros">—</div></div>
+      <div class="stat"><div class="k">Costo estimado</div><div class="v" id="rCosto">—</div></div>
+    </div>
+
+    <div class="row">
+      <button id="btnUsarKm" disabled style="opacity:.45; cursor:not-allowed">Usar km en la calculadora</button>
+    </div>
+    <p class="note" id="rutaNote">El consumo estimado se calcula con tu promedio del historial; si aún no tienes historial, se usa la referencia de la sección 3.</p>
+  </section>
+
+  <section class="card" id="calc">
+    <h2>2 · Cálculo de consumo</h2>
+    <p class="sub">Método tanque lleno: llena el tanque, anota el odómetro, vuelve a llenar y registra los litros cargados.</p>
+
+    <div class="grid2">
+      <div>
+        <label for="odo1">Odómetro anterior <span>(km, opcional)</span></label>
+        <input type="number" id="odo1" placeholder="Ej. 45000" min="0" step="1" inputmode="numeric">
+      </div>
+      <div>
+        <label for="odo2">Odómetro actual <span>(km, opcional)</span></label>
+        <input type="number" id="odo2" placeholder="Ej. 45620" min="0" step="1" inputmode="numeric">
+      </div>
+      <div>
+        <label for="km">Km recorridos desde la carga anterior</label>
+        <input type="number" id="km" placeholder="Ej. 620" min="0" step="0.1" inputmode="decimal">
+      </div>
+      <div>
+        <label for="litros">Litros cargados</label>
+        <input type="number" id="litros" placeholder="Ej. 32.5" min="0" step="0.01" inputmode="decimal">
+      </div>
+      <div>
+        <label for="precio">Precio por litro</label>
+        <input type="number" id="precio" placeholder="Ej. 24.50" min="0" step="0.01" inputmode="decimal">
+      </div>
+    </div>
+
+    <div class="row">
+      <button id="btnCalc">Calcular consumo</button>
+      <button id="btnSave" class="ghost">Guardar en historial</button>
+      <button id="btnClear" class="ghost">Limpiar</button>
+    </div>
+
+    <div class="verdict" id="verdict"></div>
+  </section>
+
+  <section class="card" id="results" style="display:none">
+    <h2>Resultado</h2>
+    <p class="sub" id="resSub">&nbsp;</p>
+    <div class="metrics">
+      <div class="metric"><div class="k">Rendimiento</div><div class="v" id="mKmL">—</div></div>
+      <div class="metric"><div class="k">Consumo</div><div class="v" id="mL100">—</div></div>
+      <div class="metric"><div class="k">Costo por km</div><div class="v" id="mCkm">—</div></div>
+      <div class="metric"><div class="k">Costo de la carga</div><div class="v" id="mTot">—</div></div>
+    </div>
+  </section>
+
+  <div class="split">
+    <section class="card">
+      <h2>3 · Comparación con la referencia</h2>
+      <p class="sub">Compara tu promedio con el consumo de referencia del Fox 1.6.</p>
+      <div class="grid2" style="grid-template-columns:1fr">
+        <div>
+          <label for="ref">Referencia <span>(L/100 km, editable)</span></label>
+          <input type="number" id="ref" value="9.5" min="1" max="30" step="0.1" inputmode="decimal">
+        </div>
+      </div>
+      <div class="cmp">
+        <div class="line">
+          <div class="lbl"><span>Tu promedio</span> <b id="lblYou">—</b></div>
+          <div class="track"><div class="fill you" id="barYou" style="width:0%"></div></div>
+        </div>
+        <div class="line">
+          <div class="lbl"><span>Referencia</span> <b id="lblRef">—</b></div>
+          <div class="track"><div class="fill ref" id="barRef" style="width:0%"></div></div>
+        </div>
+      </div>
+      <p class="note">Referencia aproximada del motor 1.6 del Fox combinado ciudad-carretera. Ajusta el valor según la ficha técnica de tu mercado o según lo que ya hayas comprobado en tu auto.</p>
+    </section>
+
+    <section class="card">
+      <h2>4 · Meta de ahorro</h2>
+      <p class="sub">Define un objetivo y estima cuánto podrías ahorrar.</p>
+      <div class="grid2">
+        <div>
+          <label for="meta">Meta de consumo <span>(L/100 km)</span></label>
+          <input type="number" id="meta" value="8.5" min="1" max="30" step="0.1" inputmode="decimal">
+        </div>
+        <div>
+          <label for="kmmes">Km al mes</label>
+          <input type="number" id="kmmes" value="800" min="1" step="10" inputmode="numeric">
+        </div>
+        <div>
+          <label for="precio2">Precio por litro</label>
+          <input type="number" id="precio2" value="24.5" min="0" step="0.01" inputmode="decimal">
+        </div>
+      </div>
+      <div class="stats" style="margin-top:16px">
+        <div class="stat"><div class="k">Gasto actual / mes</div><div class="v" id="gAct">—</div></div>
+        <div class="stat"><div class="k">Gasto con meta / mes</div><div class="v" id="gMeta">—</div></div>
+        <div class="stat"><div class="k">Ahorro / mes</div><div class="v" id="gAhorro">—</div></div>
+        <div class="stat"><div class="k">Ahorro / año</div><div class="v" id="gAnual">—</div></div>
+      </div>
+      <p class="note" id="metaNote">El cálculo usa tu promedio del historial. Si aún no hay historial, usa el último cálculo realizado.</p>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>5 · Historial de cargas</h2>
+    <p class="sub">Tus datos se guardan solo en este navegador (localStorage).</p>
+
+    <div class="stats" id="histStats" style="display:none">
+      <div class="stat"><div class="k">Cargas</div><div class="v" id="sCargas">0</div></div>
+      <div class="stat"><div class="k">Km totales</div><div class="v" id="sKm">0</div></div>
+      <div class="stat"><div class="k">Litros totales</div><div class="v" id="sLitros">0</div></div>
+      <div class="stat"><div class="k">Consumo global</div><div class="v" id="sCons">—</div></div>
+      <div class="stat"><div class="k">Gasto total</div><div class="v" id="sGasto">—</div></div>
+    </div>
+
+    <div class="tablewrap" id="tblWrap">
+      <div class="empty">Aún no hay cargas registradas.<br>Calcula un consumo y pulsa <b>Guardar en historial</b>.</div>
+    </div>
+
+    <div id="chartBox" style="display:none">
+      <h3>Consumo por carga (L/100 km)</h3>
+      <div id="chart"></div>
+    </div>
+
+    <div class="row">
+      <button id="btnExport" class="ghost">Exportar CSV</button>
+      <button id="btnBorrar" class="danger">Borrar historial</button>
+    </div>
+  </section>
+
+  <footer>
+    Calculadora no oficial · Volkswagen Fox 1.6 2014<br>
+    Mapa © colaboradores de OpenStreetMap · Rutas OSRM · Búsquedas Nominatim<br>
+    Los valores de referencia son aproximados; la conducción, el tráfico y el clima cambian mucho el consumo real.
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var K_HIST="fox_consumo_historial_v1", K_AJ="fox_consumo_ajustes_v1";
+  var $=function(id){return document.getElementById(id)};
+  var hist=cargar(K_HIST,[]), aj=cargar(K_AJ,{ref:9.5,meta:8.5,kmmes:800,precio:24.5});
+  var ultimo=null;
+
+  function cargar(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+  function guardar(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+  function num(el){var v=parseFloat($(el).value);return isNaN(v)?0:v}
+  function n(v,d){d=(d===undefined)?2:d;if(!isFinite(v))return"—";return v.toLocaleString("es",{minimumFractionDigits:d,maximumFractionDigits:d})}
+  function money(v){return "$"+n(v,2)}
+  function toast(t){var el=$("toast");el.textContent=t;el.classList.add("on");clearTimeout(el.t);el.t=setTimeout(function(){el.classList.remove("on")},2600)}
+  function precioUsado(){return num("precio")||num("precio2")||aj.precio||0}
+
+  /* ================= MAPA ================= */
+  var map=null, pts={origen:null,destino:null}, capaRuta=null;
+  var pendiente="origen", modoTap=true, ruta={dist:0,dur:0};
+
+  function initMap(){
+    if(typeof L==="undefined")return;
+    map=L.map("map",{scrollWheelZoom:true}).setView([23.6345,-102.5528],5);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+      maxZoom:19, attribution:"© <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+    }).addTo(map);
+    map.on("click",function(e){
+      if(!modoTap)return;
+      var t=e.originalEvent&&e.originalEvent.target;
+      if(t&&t.closest&&t.closest(".leaflet-marker-icon"))return;
+      setPunto(pendiente,e.latlng,null);
+    });
+    var f=document.querySelector("#map .mapfail");
+    if(f&&f.parentNode)f.parentNode.removeChild(f);
+  }
+
+  function icono(tipo){
+    var c=tipo==="origen"?"#2ea043":"#f85149";
+    return L.divIcon({className:"",html:"<div style='width:22px;height:22px;border-radius:50%;background:"+c+";border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.6)'></div>",iconSize:[22,22],iconAnchor:[11,11]});
+  }
+
+  function setPunto(tipo,latlng,nombre){
+    if(!map)return;
+    if(pts[tipo]&&pts[tipo].marker)map.removeLayer(pts[tipo].marker);
+    var mk=L.marker([latlng.lat,latlng.lng],{icon:icono(tipo)}).addTo(map);
+    var label=nombre||(tipo==="origen"?"Origen":"Destino");
+    mk.bindPopup("<b>"+label+"</b>");
+    pts[tipo]={lat:latlng.lat,lng:latlng.lng,marker:mk,nombre:label};
+    mostrarPuntos();
+    if(!nombre){
+      reverse(latlng,function(dir){
+        if(dir&&pts[tipo]&&pts[tipo].marker===mk){
+          pts[tipo].nombre=dir;
+          mk.setPopupContent("<b>"+dir+"</b>");
+          mostrarPuntos();
+        }
+      });
+    }
+    if(pts.origen&&pts.destino)trazarRuta();
+    else{ruta={dist:0,dur:0};ocultarRuta();}
+  }
+
+  function mostrarPuntos(){
+    var el=$("puntosTxt");
+    if(!pts.origen&&!pts.destino){el.classList.remove("show");return}
+    var h="";
+    if(pts.origen)h+="<span class='o'>●</span> Origen: <b>"+corto(pts.origen.nombre)+"</b>";
+    if(pts.destino)h+=(pts.origen?"<br>":"")+"<span class='d'>●</span> Destino: <b>"+corto(pts.destino.nombre)+"</b>";
+    el.innerHTML=h; el.classList.add("show");
+  }
+  function corto(s){return s&&s.length>72?s.slice(0,72)+"…":s}
+
+  function reverse(ll,cb){
+    var ctrl=typeof AbortController!=="undefined"?new AbortController():null;
+    var t=setTimeout(function(){if(ctrl)ctrl.abort()},7000);
+    fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=es&zoom=18&lat="+ll.lat+"&lon="+ll.lng,
+      ctrl?{signal:ctrl.signal}:undefined)
+      .then(function(r){return r.json()})
+      .then(function(j){clearTimeout(t);cb((j&&(j.display_name))||"")})
+      .catch(function(){clearTimeout(t);cb("")});
+  }
+
+  function trazarRuta(){
+    if(!map||!pts.origen||!pts.destino)return;
+    var a=pts.origen,b=pts.destino;
+    var url="https://router.project-osrm.org/route/v1/driving/"+a.lng+","+a.lat+";"+b.lng+","+b.lat+"?overview=full&geometries=geojson";
+    fetch(url).then(function(r){return r.json()}).then(function(j){
+      if(j.code!=="OK"||!j.routes||!j.routes.length){toast("No hay ruta posible entre esos puntos");return}
+      var rt=j.routes[0];
+      ruta.dist=rt.distance/1000; ruta.dur=rt.duration;
+      if(capaRuta)map.removeLayer(capaRuta);
+      capaRuta=L.geoJSON(rt.geometry,{style:{color:"#3b9eff",weight:5,opacity:.85,lineJoin:"round"}}).addTo(map);
+      try{map.fitBounds(capaRuta.getBounds(),{padding:[30,30]})}catch(e){}
+      renderRuta();
+    }).catch(function(){toast("No se pudo calcular la ruta. Revisa tu conexión.")});
+  }
+
+  function ocultarRuta(){
+    if(capaRuta&&map){map.removeLayer(capaRuta);capaRuta=null}
+    $("rutaStats").style.display="none";
+    $("btnUsarKm").disabled=true;
+    $("btnUsarKm").style.opacity=".45";
+    $("btnUsarKm").style.cursor="not-allowed";
+  }
+
+  function renderRuta(){
+    if(!ruta.dist)return;
+    var l100=tuPromedio()||(num("ref")||9.5);
+    var base=tuPromedio()?"tu promedio":"la referencia";
+    var litros=ruta.dist*l100/100;
+    var costo=litros*precioUsado();
+    $("rDist").innerHTML=n(ruta.dist,1)+" <small style='font-size:12px;color:var(--mut)'>km</small>";
+    $("rTiempo").textContent=fmtDur(ruta.dur);
+    $("rLitros").innerHTML=n(litros,1)+" <small style='font-size:12px;color:var(--mut)'>L</small>";
+    $("rCosto").textContent=money(costo);
+    $("rutaStats").style.display="";
+    $("rutaNote").innerHTML="Estimado con <b>"+n(l100,2)+" L/100km</b> ("+base+") y precio de "+money(precioUsado())+"/L. La ruta real puede variar según tráfico y estilo de conducción.";
+    var b=$("btnUsarKm"); b.disabled=false; b.style.opacity="1"; b.style.cursor="pointer";
+  }
+
+  function fmtDur(s){
+    var h=Math.floor(s/3600), m=Math.round((s%3600)/60);
+    if(h&&m)return h+" h "+m+" min";
+    if(h)return h+" h";
+    return m+" min";
+  }
+
+  /* --- buscador --- */
+  var buscando=false;
+  function buscar(){
+    var q=$("buscar").value.trim();
+    if(q.length<3){toast("Escribe al menos 3 caracteres");return}
+    if(buscando)return;
+    buscando=true; $("btnBuscar").disabled=true;
+    fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=es&q="+encodeURIComponent(q))
+      .then(function(r){return r.json()})
+      .then(function(j){
+        var box=$("sugerencias");
+        if(!j.length){box.innerHTML="<div class='head'>Sin resultados para «"+esc(q)+"»</div>";box.classList.add("on");return}
+        var h="<div class='head'>"+j.length+" resultado(s) — toca para fijarlo como "+pendiente+"</div>";
+        j.forEach(function(r,i){
+          h+="<button type='button' data-i='"+i+"'>"+esc(r.display_name)+"</button>";
+        });
+        box.innerHTML=h; box.classList.add("on");
+        Array.prototype.forEach.call(box.querySelectorAll("button[data-i]"),function(bk){
+          bk.addEventListener("click",function(){
+            var r=j[parseInt(bk.getAttribute("data-i"),10)];
+            box.classList.remove("on");
+            var ll={lat:parseFloat(r.lat),lng:parseFloat(r.lon)};
+            setPunto(pendiente,ll,r.display_name);
+            map.setView([ll.lat,ll.lng],14);
+          });
+        });
+      })
+      .catch(function(){toast("No se pudo buscar. Revisa tu conexión.")})
+      .then(function(){
+        buscando=false; $("btnBuscar").disabled=false;
+        setTimeout(function(){buscando=false},800);
+      });
+  }
+  function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+
+  $("btnBuscar").addEventListener("click",buscar);
+  $("buscar").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();buscar()}});
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-pin]"),function(c){
+    c.addEventListener("click",function(){
+      pendiente=c.getAttribute("data-pin");
+      document.querySelectorAll("[data-pin]").forEach(function(x){x.classList.remove("active")});
+      c.classList.add("active");
+      toast("El próximo punto se fijará como "+pendiente);
+    });
+  });
+
+  $("btnGeo").addEventListener("click",function(){
+    if(!navigator.geolocation){toast("Este navegador no soporta GPS");return}
+    if(!window.isSecureContext){toast("El GPS requiere abrir la página con https");return}
+    toast("Obteniendo tu ubicación…");
+    navigator.geolocation.getCurrentPosition(function(p){
+      var ll={lat:p.coords.latitude,lng:p.coords.longitude};
+      setPunto("origen",ll,"Mi ubicación actual");
+      pendiente="destino";
+      document.querySelectorAll("[data-pin]").forEach(function(x){x.classList.remove("active")});
+      $("chipD").classList.add("active");
+      map.setView([ll.lat,ll.lng],15);
+      toast("Origen fijado. Ahora marca el destino.");
+    },function(err){
+      var m={1:"Permiso de ubicación denegado",2:"No se pudo determinar tu ubicación",3:"Tiempo de espera agotado"};
+      toast(m[err.code]||"Error al obtener la ubicación");
+    },{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+  });
+
+  $("btnTap").addEventListener("click",function(){
+    modoTap=!modoTap;
+    $("btnTap").textContent="Tocar el mapa: "+(modoTap?"activado":"desactivado");
+    $("btnTap").className=modoTap?"active":"ghost";
+  });
+
+  $("btnInv").addEventListener("click",function(){
+    if(!pts.origen||!pts.destino){toast("Necesitas origen y destino para invertir");return}
+    var o=pts.origen,d=pts.destino;
+    if(o.marker)map.removeLayer(o.marker);
+    if(d.marker)map.removeLayer(d.marker);
+    pts={origen:null,destino:null};
+    setPunto("destino",{lat:o.lat,lng:o.lng},o.nombre);
+    setPunto("origen",{lat:d.lat,lng:d.lng},d.nombre);
+    mostrarPuntos();
+  });
+
+  $("btnQuitar").addEventListener("click",function(){
+    ["origen","destino"].forEach(function(k){if(pts[k]&&pts[k].marker)map.removeLayer(pts[k].marker)});
+    pts={origen:null,destino:null};
+    ruta={dist:0,dur:0};
+    ocultarRuta(); mostrarPuntos();
+    $("rutaNote").textContent="El consumo estimado se calcula con tu promedio del historial; si aún no tienes historial, se usa la referencia de la sección 3.";
+    toast("Mapa limpiado");
+  });
+
+  $("btnUsarKm").addEventListener("click",function(){
+    if(!ruta.dist)return;
+    $("km").value=Math.round(ruta.dist*10)/10;
+    $("calc").scrollIntoView({behavior:"smooth",block:"start"});
+    toast("Distancia copiada a la calculadora");
+  });
+
+  /* ================= CÁLCULO ================= */
+  $("ref").value=aj.ref; $("meta").value=aj.meta; $("kmmes").value=aj.kmmes;
+  $("precio").value=aj.precio; $("precio2").value=aj.precio;
+  function saveAj(){
+    aj.ref=num("ref")||9.5; aj.meta=num("meta")||8.5;
+    aj.kmmes=num("kmmes")||800; aj.precio=num("precio2")||num("precio")||24.5;
+    guardar(K_AJ,aj); renderRef(); renderMeta(); if(ruta.dist)renderRuta();
+  }
+  ["ref","meta","kmmes","precio","precio2"].forEach(function(id){
+    $(id).addEventListener("input",function(){
+      if(id==="precio")$("precio2").value=$("precio").value;
+      if(id==="precio2")$("precio").value=$("precio2").value;
+      saveAj();
+    });
+  });
+
+  function syncKm(){
+    var a=num("odo1"), b=num("odo2");
+    if(a>0&&b>a)$("km").value=Math.round((b-a)*10)/10;
+  }
+  $("odo1").addEventListener("input",syncKm);
+  $("odo2").addEventListener("input",syncKm);
+
+  function calcular(){
+    var km=num("km"), li=num("litros"), pr=precioUsado();
+    if(km<=0){toast("Ingresa los km recorridos");$("km").focus();return null}
+    if(li<=0){toast("Ingresa los litros cargados");$("litros").focus();return null}
+    var kml=km/li, l100=(li/km)*100, costo=li*pr, ckm=costo/km;
+    return {km:km,litros:li,precio:pr,kml:kml,l100:l100,costo:costo,ckm:ckm,
+            odo1:num("odo1"),odo2:num("odo2"),fecha:new Date().toISOString()};
+  }
+
+  function renderResultado(r){
+    ultimo=r;
+    $("results").style.display="";
+    $("mKmL").innerHTML=n(r.kml,2)+" <small>km/L</small>";
+    $("mL100").innerHTML=n(r.l100,2)+" <small>L/100km</small>";
+    $("mCkm").innerHTML=money(r.ckm);
+    $("mTot").innerHTML=money(r.costo)+" <small>"+n(r.litros,2)+" L</small>";
+    $("resSub").textContent=n(r.km,1)+" km recorridos con "+n(r.litros,2)+" litros"+
+      (r.precio?(" · a "+money(r.precio)+" / L"):"");
+    renderVerdict(r.l100);
+    if(ruta.dist)renderRuta();
+  }
+
+  function renderVerdict(l100){
+    var ref=num("ref")||9.5, d=((l100-ref)/ref)*100, v=$("verdict"), txt, col;
+    if(d<=-5){txt="Vas <b>"+n(Math.abs(d),1)+"% por debajo</b> de la referencia: mejor rendimiento que el dato de fábrica. Excelente.";col="var(--ok)"}
+    else if(d<5){txt="Estás <b>en línea</b> con la referencia (diferencia de "+n(d,1)+"%). Consumo normal para el Fox 1.6.";col="var(--acc)"}
+    else{txt="Vas <b>"+n(d,1)+"% por encima</b> de la referencia. Revisa presión de neumáticos, peso a bordo y estilo de conducción.";col="var(--warn)"}
+    v.innerHTML=txt; v.style.borderColor=col; v.classList.add("show");
+  }
+
+  $("btnCalc").addEventListener("click",function(){
+    var r=calcular(); if(r)renderResultado(r);
+  });
+  $("btnClear").addEventListener("click",function(){
+    ["odo1","odo2","km","litros","precio"].forEach(function(i){$(i).value=""});
+    $("results").style.display="none"; $("verdict").classList.remove("show"); ultimo=null;
+  });
+  $("btnSave").addEventListener("click",function(){
+    var r=calcular();
+    if(!r)return;
+    renderResultado(r);
+    hist.push({fecha:r.fecha,km:r.km,litros:r.litros,precio:r.precio,
+               kml:r.kml,l100:r.l100,costo:r.costo});
+    guardar(K_HIST,hist); renderTodo();
+    toast("Carga guardada en el historial");
+  });
+
+  /* ================= REFERENCIA / META ================= */
+  function tuPromedio(){
+    if(hist.length){
+      var k=0,l=0; hist.forEach(function(h){k+=h.km;l+=h.litros});
+      if(k>0)return l/k*100;
+    }
+    return ultimo?ultimo.l100:0;
+  }
+  function renderRef(){
+    var ref=num("ref")||9.5, t=tuPromedio();
+    $("lblRef").textContent=n(ref,2)+" L/100km";
+    $("lblYou").textContent=t?n(t,2)+" L/100km":"sin datos";
+    var max=Math.max(ref,t||0)*1.15||1;
+    $("barRef").style.width=(ref/max*100)+"%";
+    var by=$("barYou");
+    by.style.width=t?(t/max*100)+"%":"0%";
+    by.className="fill you"+(t>ref?" worse":"");
+    if(ultimo)renderVerdict(ultimo.l100);
+  }
+  $("ref").addEventListener("input",renderRef);
+
+  function renderMeta(){
+    var actual=tuPromedio(), meta=num("meta")||8.5, kmM=num("kmmes")||800, pr=precioUsado();
+    if(!actual){$("gAct").textContent="—";$("gMeta").textContent="—";$("gAhorro").textContent="—";$("gAnual").textContent="—";return}
+    var cA=actual/100*kmM*pr, cM=meta/100*kmM*pr, ah=cA-cM;
+    $("gAct").textContent=money(cA);
+    $("gMeta").textContent=money(cM);
+    $("gAhorro").innerHTML=money(ah)+(ah>0?' <small style="color:var(--ok)">/mes</small>':(ah<0?' <small style="color:var(--bad)">/mes</small>':''));
+    $("gAnual").textContent=money(ah*12);
+    $("metaNote").innerHTML=ah>0
+      ? "Con tu consumo actual de <b>"+n(actual,2)+" L/100km</b>, llegar a <b>"+n(meta,2)+" L/100km</b> te ahorraría <b>"+money(ah)+"</b> al mes."
+      : "Tu consumo actual ya es igual o mejor que la meta. Mantén hábitos de conducción para conservarlo.";
+  }
+
+  /* ================= HISTORIAL ================= */
+  function clase(l100){
+    var ref=num("ref")||9.5;
+    if(l100<=ref*0.95)return"good";
+    if(l100<=ref*1.05)return"mid";
+    return"high";
+  }
+  function renderHistorial(){
+    var wrap=$("tblWrap");
+    if(!hist.length){
+      wrap.innerHTML='<div class="empty">Aún no hay cargas registradas.<br>Calcula un consumo y pulsa <b>Guardar en historial</b>.</div>';
+      $("histStats").style.display="none"; $("chartBox").style.display="none";
+      return;
+    }
+    var rows=hist.slice().reverse();
+    var h='<div class="tablewrap"><table><thead><tr>'+
+      '<th>Fecha</th><th>Km</th><th>Litros</th><th>L/100km</th><th>Km/L</th><th>Costo</th><th></th>'+
+      '</tr></thead><tbody>';
+    rows.forEach(function(r,k){
+      var i=hist.length-1-k;
+      h+='<tr>'+
+        '<td>'+new Date(r.fecha).toLocaleDateString("es",{day:"2-digit",month:"short",year:"2-digit"})+'</td>'+
+        '<td>'+n(r.km,1)+'</td>'+
+        '<td>'+n(r.litros,2)+'</td>'+
+        '<td><span class="pill '+clase(r.l100)+'">'+n(r.l100,2)+'</span></td>'+
+        '<td>'+n(r.kml,2)+'</td>'+
+        '<td>'+money(r.costo)+'</td>'+
+        '<td><button class="ghost btn-sm" data-del="'+i+'">✕</button></td>'+
+      '</tr>';
+    });
+    h+='</tbody></table></div>';
+    wrap.innerHTML=h;
+
+    Array.prototype.forEach.call(wrap.querySelectorAll("[data-del]"),function(b){
+      b.addEventListener("click",function(){
+        var i=parseInt(b.getAttribute("data-del"),10);
+        hist.splice(i,1); guardar(K_HIST,hist); renderTodo(); toast("Registro eliminado");
+      });
+    });
+
+    var k=0,l=0,g=0;
+    hist.forEach(function(r){k+=r.km;l+=r.litros;g+=r.costo});
+    $("histStats").style.display="";
+    $("sCargas").textContent=hist.length;
+    $("sKm").textContent=n(k,0)+" km";
+    $("sLitros").textContent=n(l,1)+" L";
+    $("sCons").innerHTML=n(l/k*100,2)+" <small style='font-size:12px;color:var(--mut)'>L/100km</small>";
+    $("sGasto").textContent=money(g);
+    renderChart();
+  }
+
+  function renderChart(){
+    var data=hist.slice(-14);
+    if(!data.length){$("chartBox").style.display="none";return}
+    $("chartBox").style.display="";
+    var W=760,H=190,pad=30,padB=26,padT=14;
+    var ref=num("ref")||9.5;
+    var max=Math.max(ref,Math.max.apply(null,data.map(function(d){return d.l100})))*1.12;
+    var min=0;
+    var bw=(W-pad*2)/data.length;
+    var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Consumo por carga">';
+    for(var g=0;g<=4;g++){
+      var yv=min+(max-min)*g/4, y=H-padB-(yv-min)/(max-min)*(H-padB-padT);
+      s+='<line x1="'+pad+'" y1="'+y+'" x2="'+(W-pad)+'" y2="'+y+'" stroke="#2a3140" stroke-width="1"/>';
+      s+='<text x="'+(pad-6)+'" y="'+(y+4)+'" fill="#8b949e" font-size="10" text-anchor="end">'+n(yv,1)+'</text>';
+    }
+    var yr=H-padB-(ref-min)/(max-min)*(H-padB-padT);
+    s+='<line x1="'+pad+'" y1="'+yr+'" x2="'+(W-pad)+'" y2="'+yr+'" stroke="#3b9eff" stroke-width="1.5" stroke-dasharray="5 4"/>';
+    s+='<text x="'+(W-pad)+'" y="'+(yr-6)+'" fill="#3b9eff" font-size="10.5" text-anchor="end">ref '+n(ref,1)+'</text>';
+    data.forEach(function(d,i){
+      var x=pad+i*bw+bw*0.18, w=bw*0.64;
+      var hh=(d.l100-min)/(max-min)*(H-padB-padT);
+      var y=H-padB-hh;
+      var c=d.l100<=ref*0.95?"#2ea043":(d.l100<=ref*1.05?"#d29922":"#f85149");
+      s+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+Math.max(hh,1)+'" rx="4" fill="'+c+'" opacity="0.9"/>';
+      s+='<text x="'+(x+w/2)+'" y="'+(y-5)+'" fill="#e6edf3" font-size="10" text-anchor="middle" font-weight="600">'+n(d.l100,1)+'</text>';
+      s+='<text x="'+(x+w/2)+'" y="'+(H-8)+'" fill="#8b949e" font-size="9.5" text-anchor="middle">'+new Date(d.fecha).toLocaleDateString("es",{day:"2-digit",month:"2-digit"})+'</text>';
+    });
+    s+='</svg>';
+    $("chart").innerHTML=s;
+  }
+
+  $("btnBorrar").addEventListener("click",function(){
+    if(!hist.length)return;
+    if(confirm("¿Borrar todo el historial de cargas? Esta acción no se puede deshacer.")){
+      hist=[]; guardar(K_HIST,hist); renderTodo(); toast("Historial borrado");
+    }
+  });
+
+  $("btnExport").addEventListener("click",function(){
+    if(!hist.length){toast("No hay datos para exportar");return}
+    var csv="fecha;km;litros;precio_unit;L/100km;km/L;costo\n";
+    hist.forEach(function(r){
+      csv+=[new Date(r.fecha).toISOString().slice(0,10),r.km.toFixed(1),r.litros.toFixed(2),
+            r.precio.toFixed(2),r.l100.toFixed(2),r.kml.toFixed(2),r.costo.toFixed(2)].join(";")+"\n";
+    });
+    var blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download="consumo-fox-"+new Date().toISOString().slice(0,10)+".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href)},1000);
+    toast("CSV exportado");
+  });
+
+  function renderTodo(){renderHistorial();renderRef();renderMeta();if(ruta.dist)renderRuta()}
+  renderTodo();
+  initMap();
+})();
+</script>
+</body>
+</html>
