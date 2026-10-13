@@ -331,7 +331,7 @@
 
   <footer>
     Calculadora no oficial · Volkswagen Fox 1.6 2014<br>
-    Mapa © colaboradores de OpenStreetMap · Rutas OSRM · Búsquedas Nominatim<br>
+    Mapa © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://carto.com/attributions">CARTO</a> · Rutas OSRM · Búsquedas Nominatim<br>
     Los valores de referencia son aproximados; la conducción, el tráfico y el clima cambian mucho el consumo real.
   </footer>
 </div>
@@ -361,9 +361,20 @@
   function initMap(){
     if(typeof L==="undefined")return;
     map=L.map("map",{scrollWheelZoom:true}).setView([23.6345,-102.5528],5);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
-      maxZoom:19, attribution:"© <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+    var base=L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",{
+      subdomains:"abcd", maxZoom:20,
+      attribution:"© <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> · © <a href='https://carto.com/attributions'>CARTO</a>"
     }).addTo(map);
+    var errs=0, conFallback=false;
+    base.on("tileerror",function(){
+      errs++;
+      if(errs<5||conFallback)return;
+      conFallback=true;
+      map.removeLayer(base);
+      L.tileLayer("https://tile.openstreetmap.de/{z}/{x}/{y}.png",{
+        maxZoom:19, attribution:"© <a href='https://www.openstreetmap.de/'>OpenStreetMap Deutschland</a> · OpenStreetMap contributors"
+      }).addTo(map);
+    });
     map.on("click",function(e){
       if(!modoTap)return;
       var t=e.originalEvent&&e.originalEvent.target;
